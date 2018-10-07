@@ -100,6 +100,7 @@ class CifarData():
         self._indicator = end_indicator
         return batch_data, batch_labels
 
+
 # 拿到所有文件名称
 train_filenames = [os.path.join(cifar_dir, 'data_batch_%d' % i) for i in range(1, 6)]
 # 拿到标签
@@ -112,35 +113,36 @@ test_data = CifarData(test_filenames, False)
 # print(batcha_labels)
 
 
-
-
 # 设计计算图
 # 形状 [None, 3072] 3072 是 样本的维数, None 代表位置的样本数量
 x = tf.placeholder(tf.float32, [None, 3072])
 # 形状 [None] y的数量和x的样本数是对应的
 y = tf.placeholder(tf.int64, [None])
-x_image = tf.reshape(x,(-1,32,32,3))
+x_image = tf.reshape(x, (-1, 32, 32, 3))
 
 # first conv
-conv1 = tf.layers.conv2d(x_image,32,(3,3),padding='SAME',activation=tf.nn.relu,name='conv1')
-pooling1 = tf.layers.max_pooling2d(conv1,(2,2),(2,2),name='pool1')
+conv1 = tf.layers.conv2d(x_image, 32, (3, 3), padding='SAME', activation=tf.nn.relu, name='conv1')
+pooling1 = tf.layers.max_pooling2d(conv1, (2, 2), (2, 2), name='pool1')
+drop1 = tf.layers.dropout(pooling1, 0.5)
 
 # second conv
-conv2 = tf.layers.conv2d(pooling1,64,(3,3),padding='same',activation=tf.nn.relu,name='conv2')
-pooling2 = tf.layers.max_pooling2d(conv2,(2,2),(2,2),name='pool2')
+conv2 = tf.layers.conv2d(drop1, 64, (3, 3), padding='same', activation=tf.nn.relu, name='conv2')
+pooling2 = tf.layers.max_pooling2d(conv2, (2, 2), (2, 2), name='pool2')
+drop2 = tf.layers.dropout(pooling2, 0.5)
 
 # third conv
-conv3 = tf.layers.conv2d(pooling2,128,(3,3),padding='same',activation=tf.nn.relu,name='conv3')
-pooling3 = tf.layers.max_pooling2d(conv3,(2,2),(2,2),name='pool3')
+conv3 = tf.layers.conv2d(drop2, 128, (3, 3), padding='same', activation=tf.nn.relu, name='conv3')
+pooling3 = tf.layers.max_pooling2d(conv3, (2, 2), (2, 2), name='pool3')
+drop3 = tf.layers.dropout(pooling3, 0.5)
 
-flatten = tf.layers.flatten(pooling3)
-y_ = tf.layers.dense(flatten,10)
+flatten = tf.layers.flatten(drop3)
+y_ = tf.layers.dense(flatten, 10)
 
-loss = tf.losses.sparse_softmax_cross_entropy(labels=y,logits=y_)
+loss = tf.losses.sparse_softmax_cross_entropy(labels=y, logits=y_)
 
-predict = tf.argmax(y_,1)
-correct_prediction = tf.equal(predict,y)
-accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
+predict = tf.argmax(y_, 1)
+correct_prediction = tf.equal(predict, y)
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 with tf.name_scope('train_op'):
     train_op = tf.train.AdamOptimizer(0.001).minimize(loss)
@@ -153,22 +155,21 @@ test_steps = 100
 with tf.Session() as sess:
     sess.run(init)
     for i in range(train_steps):
-        batch_data,batch_labels = train_data.next_batch(batch_size)
-        loss_val,acc_val,_ =sess.run([loss,accuracy,train_op],
-                                     feed_dict={x:batch_data,y:batch_labels})
-        if(i + 1)% 100 == 0:
-            print('[Train] Step: %d, loss: %f, acc: %f' %(i+1,loss_val,acc_val))
+        batch_data, batch_labels = train_data.next_batch(batch_size)
+        loss_val, acc_val, _ = sess.run([loss, accuracy, train_op],
+                                        feed_dict={x: batch_data, y: batch_labels})
+        if (i + 1) % 100 == 0:
+            print('[Train] Step: %d, loss: %f, acc: %f' % (i + 1, loss_val, acc_val))
 
-        if(i + 1)% 1000 == 0:
-            test_data = CifarData(test_filenames,False)
+        if (i + 1) % 1000 == 0:
+            test_data = CifarData(test_filenames, False)
             all_test_acc_val = []
             for j in range(test_steps):
                 test_batch_data, test_batch_labels = test_data.next_batch(batch_size)
-                test_acc_val = sess.run(accuracy,feed_dict = {x:test_batch_data, y:test_batch_labels})
+                test_acc_val = sess.run(accuracy, feed_dict={x: test_batch_data, y: test_batch_labels})
                 all_test_acc_val.append(test_acc_val)
             test_acc = np.mean(all_test_acc_val)
-            print('[Test ] Step: %d, acc: %f'%(i + 1, test_acc))
-
+            print('[Test ] Step: %d, acc: %f' % (i + 1, test_acc))
 
 # 打开文件操作
 

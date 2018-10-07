@@ -10,3 +10,7 @@
 
 '''
 print('hello pycharm git')
+def test():
+    print('hello python')
+    print('hello pycharm')
+    print('hello world')
